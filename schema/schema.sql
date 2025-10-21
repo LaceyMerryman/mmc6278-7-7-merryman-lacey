@@ -9,7 +9,7 @@ CREATE TABLE inventory (
   quantity INT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE user (
+CREATE TABLE users (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(100) NOT NULL UNIQUE,
   password VARCHAR(200) NOT NULL
@@ -18,12 +18,12 @@ CREATE TABLE user (
 CREATE TABLE cart (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   inventory_id INT NOT NULL,
-  user_id INT,
+  user_id INT NOT NULL,
   quantity INT NOT NULL DEFAULT 1,
   FOREIGN KEY (inventory_id)
     REFERENCES inventory (id)
-    ON DELETE CASCADE
-  FOREIGN KEY (user_id) 
-    REFERENCES user (id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (user_id)
+    REFERENCES users (id)
     ON DELETE CASCADE
 );
