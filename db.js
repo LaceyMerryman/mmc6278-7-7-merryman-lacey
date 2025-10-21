@@ -1,11 +1,12 @@
-const mysql = require("mysql2");
+const mysql = require('mysql2/promise');
 
-const config = process.env.JAWSDB_URL || {
-  connectionLimit: 10,
-  host: "localhost",
-  user: "root",
-  database: process.env.npm_package_config_DB_NAME,
-};
-const db = mysql.createPool(config);
+const connection = process.env.JAWSDB_URL
+  ? mysql.createPool(process.env.JAWSDB_URL)
+  : mysql.createPool({
+      host: 'localhost',
+      user: 'root',
+      password: process.env.DB_PASSWORD,
+      database: 'music_shop_db'
+    });
 
-module.exports = db.promise();
+module.exports = connection;
