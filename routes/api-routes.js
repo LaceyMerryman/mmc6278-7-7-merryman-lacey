@@ -88,34 +88,69 @@ router
       res.status(404).send('Cart item not found')
   })
 
-// This route should create a new User
+// POST /user - Create new user
 router.post('/user', async (req, res) => {
-  const {username, password} = req.body
-  // if the username or password is not provided, return a 400 status
-  // hash the password using bcrypt.hash and use 10 salt rounds
-  // then insert the username and hashed password into the users table
-  // and redirect the user to the /login page
+  const { username, password } = req.body
 
-  // if an error occurs with a code property equal to 'ER_DUP_ENTRY'
-  // return a 409 status code (the user exists already)
-  // for any other error, return a 500 status
+  if (!username || !password) {
+    return res.status(400).send('Username and password required')
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10)
+    await db.query(
+      'INSERT INTO user (username, password) VALUES (?, ?)',
+      [username, hashedPassword]
+    )
+    res.redirect('/login')
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).send('User already exists')
+    }
+    console.error(err)
+    res.status(500).send('Error creating user')
+  }
 })
 
-// This route will log the user in and create the session
+// POST /login - Log user in
 router.post('/login', async (req, res) => {
-  const {username, password} = req.body
-  // if the username or password is not provided, return a 400 status
-  // Query the database by the username for the user
-  // If no user is found, return a 400 status code
-  // If the user is found, use bcrypt.compare to compare the password to the hash
-  // If the password is wrong, return a 400 status code
-  // If the password matches, set req.session.loggedIn to true
-  // set req.session.userId to the user's id
-  // call req.session.save and in the callback redirect to /
+  const { username, password } = req.body
+
+  if (!username || !password) {
+    return res.status(400).send('Username and password required')
+  }
+
+  try {
+    const [rows] = await db.query('SELECT * FROM user WHERE username = ?', [username])
+    const user = rows[0]
+
+    if (!user) {
+      return res.status(400).send('Invalid username or password')
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password)
+    if (!validPassword) {
+      return res.status(400).send('Invalid username or password')
+    }
+
+    req.session.loggedIn = true
+    req.session.userId = user.id
+
+    req.session.save(() => {
+      res.redirect('/')
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('Error logging in')
+  }
 })
 
+// GET /logout - Log user out
 router.get('/logout', async (req, res) => {
-  // call req.session.destroy and in the callback redirect to /
+  req.session.destroy(() => {
+    res.clearCookie('session_cookie')
+    res.redirect('/')
+  })
 })
 
 module.exports = router
